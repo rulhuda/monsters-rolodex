@@ -1,72 +1,69 @@
 /* eslint-disable array-callback-return */
-import React, { Component } from 'react';
+import React, { useState, useEffect } from 'react';
 import CardList from './components/card-list/card-list.component';
 import SearchBox from './components/search-box/search-box.component';
 import './App.css';
 import Source from './source/monster-api';
 
-class App extends Component {
-  constructor() {
-    super();
+const App = () => {
+    const [searchField, setSearchField] = useState('');
+    const [monsters, setMonsters] = useState([]);
+    const [filteredMonsters, setFilterMonsters] = useState([]);
+    
+    useEffect(() => {
+      const getAllMonsters = async () => {
+        const allMonster = await Source.getMonsters();
 
-    this.state = {
-      monsters : [],
-      searchField: '',
-    };
+        setMonsters(allMonster);
+      }
+      getAllMonsters();
+    }, [])
 
-    this.onChangeEventHandler = this.onChangeEventHandler.bind(this);
-  }
-
-  async componentDidMount(){
-    const allMonster = await Source.getMonsters();
-    this.setState(
-      () => {
-        return {
-          monsters: [...allMonster],
+    useEffect(() => {
+      const filteredResult = (stateMonsters, searchMonster) => {
+        const newFilteredMonsters = stateMonsters
+        .filter((monster) => {
+          if (monster.name.toLowerCase()
+            .includes(searchMonster)){
+              return monster;
+            }
+        });
+  
+        if (searchMonster.trim() === '') {
+          return stateMonsters.sort((a, b) => {
+            if (a.name > b.name) {
+              return 1;
+            }
+            if (b.name > a.name) {
+              return -1;
+            }
+            return 0;
+          });
+        }
+  
+        if (newFilteredMonsters.length > 0) {
+          return newFilteredMonsters;
         }
       }
-    )
-  }
+      const resultFilterMonster = filteredResult(monsters, searchField);
 
-  async onChangeEventHandler(event) {
-    const searchField = event.target.value.trim().toLowerCase();
-    this.setState(
-      () => {
-        return { searchField }
-      }
-    );
-  }
+      setFilterMonsters(resultFilterMonster);
+    }, [monsters, searchField]);
+    
+    
+    const onChangeEventHandler = (event) => {
+      const searchFieldString = event.target.value.toLowerCase();
 
-  render() {
-    const { monsters, searchField } = this.state;
-    const { onChangeEventHandler } = this;
-
-    const filteredResult = (stateMonsters) => {
-      const filteredMonsters = stateMonsters
-      .filter((monster) => {
-        if (monster.name.toLowerCase()
-          .includes(searchField)){
-            return monster;
-          }
-      });
-
-      if (searchField.trim() === '') {
-        return stateMonsters;
-      }
-
-      if (filteredMonsters.length > 0) {
-        return filteredMonsters;
-      }
+      setSearchField(searchFieldString);
     }
 
     return (
       <div className='App'>
-          <h1 className='text-monster'>Monsters Rolodex</h1>
-          <SearchBox onChangeHandler={onChangeEventHandler} placeholder='search monsters' />
-          <CardList monsters={filteredResult(monsters)} />
+        <h1 className='text-monster'>Monsters Rolodex</h1>
+        <SearchBox onChangeHandler={onChangeEventHandler} placeholder='search monsters' />
+        <CardList monsters={filteredMonsters} />
       </div>
     )
-  }
 }
 
 export default App;
